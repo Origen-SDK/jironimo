@@ -1,0 +1,95 @@
+% render "layouts/basic.html" do
+
+%# HTML tags can be embedded in mark down files if you want to do specific custom
+%# formatting like this, but in most cases that is not required.
+<h1><%= Origen.app.namespace %> <span style="font-size: 14px">(<%= Origen.app.version %>)</span></h1>
+
+### Purpose
+
+This plugin provides interaction with the [JIRA issue tracking system](https://jira.atlassian.com/).
+It provides some helpful high level methods while using the ruby-jira gem to do the heavy lifting.
+If there isn't a canned method to do what you want do not despair, just go [here](https://github.com/sumoheavy/jira-ruby) and read up.
+
+### How To Import
+
+##### To use in an application:
+
+Add the following to your application's <code>Gemfile</code>:
+
+~~~ruby
+gem '<%= Origen.app.name %>', '<%= Origen.app.version %>'
+~~~
+
+##### To use in a plugin:
+
+Add the following to your plugin's gemspec:
+
+~~~ruby
+spec.add_runtime_dependency '<%= Origen.app.name %>', '~> <%= Origen.app.version.major %>', '>= <%= Origen.app.version %>'
+~~~
+
+and require the gem in your code:
+
+~~~ruby
+require '<%= Origen.app.name %>'
+~~~
+
+
+### How To Use
+
+Give some quick start description here on how to use your plugin, providing
+links to the API documents where necessary for further details.
+
+Here is an example integration:
+
+~~~ruby
+module MyJira
+  require 'jironimo'
+
+  my_jironimo_client = Jironimo.launch
+
+  # Set the current Jironimo project to 'ISC'
+  Jironimo.current_project = 'ISC'
+
+  unless Jironimo.issues['ISC-463'].assignee.nil?
+    Origen.log.info "Give him another issue!"
+    Origen.log.info "His email is #{Jironimo.issues['ISC-463'].assignee.emailAddress}"
+  end
+
+  # Print out current users issues to console
+  Jironimo.my_issues(verbose: true)
+
+  # Create a new ticket
+  project_issue_count = Jironimo.issues.size
+  new_issue = Jironimo.new_issue(type: 'Bug', summary: 'my summary', description: 'my description', priority: 1, assignee: 'B07507')
+
+  # Re-fresh the JIRA client database
+  Jironimo.refresh
+
+  new_project_issue_count = Jironimo.issues.size
+
+  # Make sure the database has one more ticket fo the current project
+  unless new_project_issue_count.should == (project_issue_count + 1)
+    Origen.log.error "Could not create new issue for project '#{@current_project.key}:#{@current_project.name}'"
+  end
+
+  # Delete the issue if needed
+  delete_issue(new_issue.key) # Method 1, useful when the user doesn't have an object instance
+  new_issue.delete            # Method 2, suited for when the user does have an object instance
+
+~~~
+
+### How To Setup a Development Environment
+
+~~~text
+mkdir <%= Origen.app.name %>
+cd <%= Origen.app.name %>
+dssc setvault <%= Origen.app.config.vault %> .
+dssc pop -rec -get .
+~~~
+
+Follow the instructions here if you want to make a 3rd party app
+workspace use your development copy of the <%= Origen.app.name %> plugin:
+[Setting up a Plugin Development Environment](http://origen-sdk.org/origen/guides/plugins/environment/)
+
+% end

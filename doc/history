@@ -1,0 +1,152 @@
+<a class="anchor release_tag" name="v0_2_0_pre3"></a>
+<h2><a href="#v0_2_0_pre3">Tag: v0.2.0.pre3</a></h2>
+
+##### Branch: 'Trunk'
+
+##### by Brian Caquelin on 27-Mar-2015 13:43PM
+
+
+* Fixed bug where #my\_issues did not work without supplying assignee option
+
+<a class="anchor release_tag" name="v0_2_0_pre2"></a>
+<h2><a href="#v0_2_0_pre2">Tag: v0.2.0.pre2</a></h2>
+
+##### Branch: 'Trunk'
+
+##### by Brian Caquelin on 25-Mar-2015 14:14PM
+
+
+* Added in method documentation
+
+<a class="anchor release_tag" name="v0_2_0_pre1"></a>
+<h2><a href="#v0_2_0_pre1">Tag: v0.2.0.pre1</a></h2>
+
+##### Branch: 'Trunk'
+
+##### by Brian Caquelin on 25-Mar-2015 13:44PM
+
+
+* Updated users list and web docs
+
+<a class="anchor release_tag" name="v0_2_0_pre0"></a>
+<h2><a href="#v0_2_0_pre0">Tag: v0.2.0.pre0</a></h2>
+
+##### Branch: 'Trunk'
+
+##### by Brian Caquelin on 25-Mar-2015 13:09PM
+
+
+* Initial release of Jironimo gem, a wrapper of the jira-ruby gem.
+
+* All heavy lifting done by the jira-ruby gem, this gem standardizes and simplifies common
+JIRA tasks
+    * Retrieving a JIRA project
+    * Retrieving all issues for a JIRA project
+    * Creating a new JIRA issue for a particular project
+    * Delete a JIRA issue
+    * Get a console list of topics for the current user
+
+* The gem exposes the JIRA client as Jironimo.client so users can initiate more customized
+tasks directly including field searches and jql searches
+
+* TODO:
+    * Add an update\_issue method
+    * Create rake tasks to find TODO type code comments for auto-generation of JIRA issues
+
+* Here are some examples of the interaction in the rspec tests
+
+~~~ruby
+    before "all" do
+      @my\_Jironimo\_client = Jironimo.launch
+      @my\_Jironimo\_project = Jironimo.project('ISC')
+    end
+
+    it 'can query meta-info about the JIRA warehouse' do
+      Jironimo.site.should == 'http://my-jira.net'
+      @my\_Jironimo\_client.class.to\_s.should == 'JIRA::Client'
+      @my\_Jironimo\_client.options[:username].should == User.current.core\_id
+    end
+
+    it 'can find issue types and their attributes' do
+      Jironimo.issue\_types(/bug/i).description.should == 'A problem which impairs or
+prevents the functions of the product.'
+      Jironimo.issue\_types(/bug/i).name.should == 'Bug'
+      Jironimo.issue\_types(/bug/i).id.to\_numeric.should == 1
+      Jironimo.issue\_types.keys[0..1].should == ["Requirement", "Bug"]
+    end
+
+    it 'can find a project by project key or ID' do
+      @my\_Jironimo\_project.id.should == '11020'
+      Jironimo.project(11020).should == @my\_Jironimo\_project
+    end
+
+    it 'can use the client instance to find a project' do
+      @my\_Jironimo\_project.url.should == '/rest/api/2/project/11020'
+      @my\_Jironimo\_project.self.should ==
+'http://my-jira.net/rest/api/2/project/11020'
+      @my\_Jironimo\_project.id.to\_numeric.should == 11020
+      @my\_Jironimo\_project.key.should == 'ISC'
+      @my\_Jironimo\_project.name.should == 'Information Supply Chain'
+      @my\_Jironimo\_project.lead.should == nil # Why don't we fill this out?
+      @my\_Jironimo\_project.issues.class.should == Array
+    end
+
+    it 'can set the current project and access its issues' do
+      Jironimo.current\_project = 'ISC'
+      Jironimo.issues.class.should == Hash
+      Jironimo.issues.size.should >= 384 # This is an active project so cannot be ==
+      Jironimo.issues.keys[0..1].size.should == 2 # Can't test real key values because it
+is a living project
+    end
+
+    it 'can access an individual issue and its attributes' do
+      Jironimo.current\_project = 'ISC'
+      Jironimo.issues['ISC-463'].issuetype.name.should == 'Improvement'
+      Jironimo.issues['ISC-463'].issuetype.description.should == 'An improvement or
+enhancement to an existing feature or task.'
+      Jironimo.issues['ISC-463'].summary.should == 'Add in Jira API to Origen'
+      Jironimo.issues['ISC-463'].description.should == 'Origen needs a gneral purpose API
+for communicating with Jira.  This would be required before the ISC origen application can
+create code to enahance integration with Jira.'
+      Jironimo.issues['ISC-463'].assignee.name.should == 'B07507'
+      Jironimo.issues['ISC-463'].assignee.emailAddress.should ==
+'brian.caquelin@freescale.com'
+      Jironimo.issues['ISC-463'].status.name.should == 'Open'
+    end
+
+    it 'can change the current project and get different values for the same attributes'
+do
+      Jironimo.current\_project = 'ISC'
+      first\_project\_description = Jironimo.issues.values.first.description
+      Jironimo.current\_project = 'APEX'
+      second\_project\_description = Jironimo.issues.values.first.description
+      first\_project\_description.should\_not == second\_project\_description
+    end
+
+    it 'can find the current users issues' do
+      # Passing in the optional user argument to enable repeatable testing
+      # Typical usage would be Jironimo.my\_issues
+      Jironimo.current\_project = 'ISC'
+      Jironimo.my\_issues(user: 'b07507', verbose: true).values.first.assignee.name.should
+== User.current.core\_id.upcase
+      Jironimo.current\_project = 'APEX'
+      Jironimo.my\_issues(user: 'b07507').empty?.should == true
+    end
+
+    it 'can create and delete a new project issue' do
+      Jironimo.current\_project = 'ISC'
+      project\_issue\_count = Jironimo.issues.size
+      new\_issue = Jironimo.new\_issue(type: 'Bug', summary: 'my summary', description: 'my
+description', priority: 1, assignee: 'B07507')
+      Jironimo.refresh
+      new\_project\_issue\_count = Jironimo.issues.size
+      new\_project\_issue\_count.should == project\_issue\_count + 1
+      new\_issue.class.should == JIRA::Resource::Issue
+      new\_issue.delete.should == true
+      Jironimo.refresh
+      current\_project\_issue\_count = Jironimo.issues.size
+      current\_project\_issue\_count.should == project\_issue\_count
+    end
+~~~
+
+
